@@ -1,1 +1,1 @@
-# Bot-discord
+Simple discord bot to update a list of job with a specific level
