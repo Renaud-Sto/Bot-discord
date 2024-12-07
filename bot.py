@@ -1,22 +1,48 @@
 import discord
 from discord.ext import commands
+import json
+import os
 
 # Intents et configuration du bot
-# Configuration des intents
 intents = discord.Intents.default()
 intents.messages = True  # Permet de lire le contenu des messages
 intents.message_content = True  # Intents privilégiés pour le contenu des messages
 bot = commands.Bot(command_prefix="!", intents=intents)
 
 # ID du canal cible
-TARGET_CHANNEL_ID = 1315004557729726586  # Remplacez par l'ID correct
-
-# Dictionnaire pour stocker les données des sections
-sections = {}
+TARGET_CHANNEL_ID = 1315001055389679676  # Remplacez par l'ID correct
 
 # Liste des métiers autorisés
 ALLOWED_JOBS = ["Forgeron", "Forgemage", "Tailleur", "Costumage", "Cordonnier", "Cordomage", "Bijoutier", "Joaillomage", "Sculpteur", "Sculptemage",
                  "Façonneur", "Façomage", "Alchimiste", "Bricoleur", "Bûcheron", "Paysan", "Mineur", "pêcheur", "Chasseur"]
+
+# Dictionnaire pour stocker les données des sections
+sections = {}
+
+# Chemin du fichier JSON
+FILE_PATH = "sections_data.json"
+
+# Fonction pour charger les données depuis le fichier JSON
+def load_data():
+    global sections
+    if os.path.exists(FILE_PATH):
+        try:
+            with open(FILE_PATH, "r") as f:
+                sections = json.load(f)
+                print("Données chargées avec succès depuis le fichier.")
+        except Exception as e:
+            print(f"Erreur lors du chargement des données : {e}")
+    else:
+        print("Aucun fichier trouvé. Initialisation des données vides.")
+
+# Fonction pour sauvegarder les données dans un fichier JSON
+def save_data():
+    try:
+        with open(FILE_PATH, "w") as f:
+            json.dump(sections, f, indent=4)
+            print("Données sauvegardées avec succès dans le fichier.")
+    except Exception as e:
+        print(f"Erreur lors de la sauvegarde des données : {e}")
 
 # Stocker le message initial pour le mettre à jour
 initial_message = None
@@ -39,6 +65,9 @@ async def on_ready():
     print(f"Connecté en tant que {bot.user} !")
     global initial_message
 
+    # Charger les données depuis le fichier JSON
+    load_data()
+
     # Obtenir le canal cible
     target_channel = bot.get_channel(TARGET_CHANNEL_ID)
     if not target_channel:
@@ -59,6 +88,8 @@ async def update(ctx, name: str, job: str, level: int):
     global sections
     global initial_message
 
+    print(f"Commande update reçue : {name}, {job}, {level}")  # Debug
+
     # Vérifier si la commande est exécutée dans le bon canal
     if ctx.channel.id != TARGET_CHANNEL_ID:
         print(f"Commande reçue dans le mauvais canal : {ctx.channel.id}")
@@ -70,12 +101,12 @@ async def update(ctx, name: str, job: str, level: int):
 
     # Vérifier si le métier est dans la liste des métiers autorisés
     if job not in ALLOWED_JOBS:
+        # Envoi du message d'erreur en privé (hidden) à l'utilisateur uniquement
         try:
             await ctx.author.send(f"Le métier `{job}` n'est pas autorisé. Voici les métiers disponibles : {', '.join(ALLOWED_JOBS)}.")
         except discord.Forbidden:
             await ctx.send("Je ne peux pas vous envoyer de message privé. Veuillez vérifier vos paramètres de confidentialité.")
-        await ctx.message.delete()  # Supprime le message de la commande
-        return        
+        return
 
     # Ajouter ou mettre à jour les données
     if job not in sections:
@@ -87,6 +118,9 @@ async def update(ctx, name: str, job: str, level: int):
     else:
         sections[job][name] = level
         action = "ajouté"
+
+    # Sauvegarder les données dans le fichier JSON
+    save_data()
 
     # Mettre à jour le message initial
     target_channel = bot.get_channel(TARGET_CHANNEL_ID)
@@ -115,6 +149,6 @@ async def update(ctx, name: str, job: str, level: int):
     except Exception as e:
         print(f"Erreur lors de la mise à jour du message initial : {e}")
         await ctx.send("Une erreur est survenue lors de la mise à jour.")
-
+        
 # Lancer le bot avec votre token
-bot.run("MTMxNDk3MzUxOTkzODg0NjgwMQ.G-b3z8.D6P-t5DnU72Md9emsnFKKSUCDw-G_SqwKHqwpU")
+bot.run("ENTER_YOUR_BOT_TOKEN")
